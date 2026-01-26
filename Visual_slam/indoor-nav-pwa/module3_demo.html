@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Module 3: Navigation Logic Simulator</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #f0f0f0;
+            font-family: sans-serif;
+        }
+
+        #canvas {
+            display: block;
+            background: white;
+            margin: 20px auto;
+            border: 1px solid #ccc;
+            cursor: crosshair;
+        }
+
+        #controls {
+            text-align: center;
+            padding: 10px;
+        }
+
+        .status {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="controls">
+        <h2>Navigation Simulator</h2>
+        <p>Click to set Target (Red). Drag User (Blue) to move/rotate.</p>
+        <button onclick="reset()">Reset</button>
+        <div class="status" id="status">State: IDLE</div>
+        <div id="instruction">Instruction: -</div>
+    </div>
+    <canvas id="canvas" width="600" height="400"></canvas>
+
+    <script src="navigation.js"></script>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const statusEl = document.getElementById('status');
+        const instrEl = document.getElementById('instruction');
+
+        // Simulation State
+        let user = { x: 300, y: 200, heading: 0 }; // Heading 0 = Up (North)
+        let target = null;
+        let isDragging = false;
+
+        // Scale: 10 pixels = 1 meter
+        const SCALE = 10;
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Grid
+            ctx.strokeStyle = '#eee';
+            ctx.beginPath();
+            for (let x = 0; x < canvas.width; x += 50) { ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); }
+            for (let y = 0; y < canvas.height; y += 50) { ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); }
+            ctx.stroke();
+
+            // Draw Target
+            if (target) {
+                ctx.fillStyle = 'red';
+                ctx.beginPath();
+                ctx.arc(target.x, target.y, 8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = 'black';
+                ctx.fillText("Target", target.x + 10, target.y);
+            }
+
+            // Draw User
+            ctx.save();
+            ctx.translate(user.x, user.y);
+            ctx.rotate(user.heading * Math.PI / 180); // Rotate canvas to user heading
+
+            // User Body (Blue Circle)
+            ctx.fillStyle = 'blue';
+            ctx.beginPath();
+            ctx.arc(0, 0, 10, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Heading Arrow (Triangle)
+            ctx.fillStyle = 'blue';
+            ctx.beginPath();
+            ctx.moveTo(0, -15); // Tip (Up because 0 deg is Up)
+            ctx.lineTo(-8, 5);
+            ctx.lineTo(8, 5);
+            ctx.fill();
+
+            ctx.restore();
+
+            // Draw Info
+            ctx.fillStyle = 'black';
+            ctx.fillText(`User: (${(user.x / SCALE).toFixed(1)}, ${(user.y / SCALE).toFixed(1)})`, 10, 20);
+            ctx.fillText(`Heading: ${Math.round(user.heading)}°`, 10, 40);
+        }
+
+        // Interaction
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            // Check if clicking near user to drag
+            const dist = Math.sqrt((x - user.x) ** 2 + (y - user.y) ** 2);
+            if (dist < 20) {
+                isDragging = true;
+            } else {
+                // Set Target
+                target = { x, y };
+                window.IndoorNavigator.setTarget(x / SCALE, -y / SCALE); // Invert Y for logic (Up is +)
+                updateNav();
+            }
+            draw();
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                // Calculate heading based on movement vector (simulate walking)
+                // Or just drag position and use scroll for rotation? 
+                // Let's just drag position.
+
+                // Simple: Drag to move position. 
+                // Scroll wheel to rotate.
+                user.x = x;
+                user.y = y;
+                updateNav();
+                draw();
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => isDragging = false);
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            user.heading += e.deltaY > 0 ? 10 : -10;
+            user.heading = (user.heading + 360) % 360;
+            updateNav();
+            draw();
+        });
+
+        function updateNav() {
+            // Convert canvas coords to logical coords (Y up)
+            const lx = user.x / SCALE;
+            const ly = -user.y / SCALE;
+
+            window.IndoorNavigator.update(lx, ly, user.heading);
+
+            statusEl.innerText = `State: ${window.IndoorNavigator.state}`;
+            // Hack to show last spoken text
+            // In real app, we don't need this, but for sim it's nice
+        }
+
+        function reset() {
+            target = null;
+            user = { x: 300, y: 200, heading: 0 };
+            window.IndoorNavigator.state = 'IDLE';
+            draw();
+        }
+
+        // Initial Draw
+        draw();
+
+        // Override speak for demo visualization
+        const originalSpeak = window.IndoorNavigator.engine.speak.bind(window.IndoorNavigator.engine);
+        window.IndoorNavigator.engine.speak = (text) => {
+            instrEl.innerText = `Instruction: "${text}"`;
+            originalSpeak(text);
+        };
+
+    </script>
+</body>
+
+</html>

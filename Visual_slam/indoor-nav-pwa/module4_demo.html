@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Module 4: Accessibility Simulator</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            text-align: center;
+            background: #f4f4f4;
+        }
+
+        button {
+            display: block;
+            width: 80%;
+            margin: 15px auto;
+            padding: 15px;
+            font-size: 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+        }
+
+        button.critical {
+            background: #dc3545;
+        }
+
+        button.info {
+            background: #6c757d;
+        }
+
+        #log {
+            margin-top: 20px;
+            text-align: left;
+            background: white;
+            padding: 10px;
+            height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Accessibility Feedback</h1>
+    <p>Click "Enable Audio" first.</p>
+
+    <button onclick="window.Accessibility.enableAudio()" style="background: #28a745;">Enable Audio</button>
+
+    <hr>
+
+    <button onclick="test('normal', 'left')">Turn Left (Normal)</button>
+    <button onclick="test('normal', 'right')">Turn Right (Normal)</button>
+    <button onclick="test('critical', 'stop')" class="critical">STOP (Critical)</button>
+    <button onclick="test('critical', 'arrived')" class="critical">Arrived (Critical)</button>
+    <button onclick="test('info', 'info')" class="info">Info (Low Priority)</button>
+
+    <div id="log"></div>
+
+    <script src="accessibility.js"></script>
+    <script>
+        const logEl = document.getElementById('log');
+
+        function log(msg) {
+            const div = document.createElement('div');
+            div.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            logEl.prepend(div);
+        }
+
+        // Hook into console.log to show in UI
+        const originalLog = console.log;
+        console.log = function (...args) {
+            originalLog.apply(console, args);
+            log(args.join(' '));
+        };
+
+        function test(priorityStr, type) {
+            let priority = 1;
+            let text = "";
+
+            if (priorityStr === 'critical') priority = 2;
+            if (priorityStr === 'info') priority = 0;
+
+            switch (type) {
+                case 'left': text = "Turn left in 5 meters."; break;
+                case 'right': text = "Turn right now."; break;
+                case 'stop': text = "Stop! Obstacle ahead."; break;
+                case 'arrived': text = "You have arrived at your destination."; break;
+                case 'info': text = "Entering the main lobby."; break;
+            }
+
+            window.Accessibility.notify(type, text, priority);
+        }
+    </script>
+</body>
+
+</html>

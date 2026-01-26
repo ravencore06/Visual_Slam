@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Module 2: Relative Positioning</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #222;
+            color: white;
+            font-family: sans-serif;
+        }
+
+        #map {
+            width: 100vw;
+            height: 60vh;
+            background: #333;
+            display: block;
+        }
+
+        #stats {
+            height: 40vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        #video-preview {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 100px;
+            height: 75px;
+            border: 1px solid white;
+        }
+
+        #vo-canvas {
+            display: none;
+        }
+
+        /* Hidden canvas for processing */
+    </style>
+</head>
+
+<body>
+    <canvas id="map"></canvas>
+    <div id="stats">
+        <h2>Position Tracker</h2>
+        <p>X: <span id="pos-x">0.00</span> m</p>
+        <p>Y: <span id="pos-y">0.00</span> m</p>
+        <p>Heading: <span id="heading">0</span>&deg;</p>
+        <p>Steps: <span id="steps">0</span></p>
+        <button onclick="start()">Start Tracking</button>
+        <button onclick="reset()">Reset</button>
+    </div>
+
+    <video id="video-preview" playsinline autoplay muted></video>
+    <canvas id="vo-canvas"></canvas>
+
+    <script src="odometry.js"></script>
+    <script>
+        const mapCanvas = document.getElementById('map');
+        const ctx = mapCanvas.getContext('2d');
+        const video = document.getElementById('video-preview');
+        const voCanvas = document.getElementById('vo-canvas');
+
+        // UI Elements
+        const elX = document.getElementById('pos-x');
+        const elY = document.getElementById('pos-y');
+        const elH = document.getElementById('heading');
+        const elS = document.getElementById('steps');
+
+        let path = [{ x: 0, y: 0 }];
+
+        function resize() {
+            mapCanvas.width = window.innerWidth;
+            mapCanvas.height = window.innerHeight * 0.6;
+            drawMap();
+        }
+        window.onresize = resize;
+        resize();
+
+        function drawMap() {
+            ctx.fillStyle = '#333';
+            ctx.fillRect(0, 0, mapCanvas.width, mapCanvas.height);
+
+            // Center of map
+            const cx = mapCanvas.width / 2;
+            const cy = mapCanvas.height / 2;
+            const scale = 20; // pixels per meter
+
+            // Draw Path
+            ctx.beginPath();
+            ctx.strokeStyle = '#00FF00';
+            ctx.lineWidth = 2;
+            path.forEach((p, i) => {
+                const px = cx + p.x * scale;
+                const py = cy - p.y * scale; // Invert Y for screen coords
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            });
+            ctx.stroke();
+
+            // Draw User
+            const last = path[path.length - 1];
+            const ux = cx + last.x * scale;
+            const uy = cy - last.y * scale;
+
+            ctx.fillStyle = 'red';
+            ctx.beginPath();
+            ctx.arc(ux, uy, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw Heading Vector
+            const h = window.IndoorNav.headingEstimator.heading;
+            ctx.beginPath();
+            ctx.strokeStyle = 'red';
+            ctx.moveTo(ux, uy);
+            ctx.lineTo(ux + Math.sin(h) * 20, uy - Math.cos(h) * 20);
+            ctx.stroke();
+        }
+
+        async function start() {
+            // Request Permissions (iOS 13+)
+            if (typeof DeviceMotionEvent.requestPermission === 'function') {
+                try {
+                    await DeviceMotionEvent.requestPermission();
+                    await DeviceOrientationEvent.requestPermission();
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+
+            // Camera
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                video.srcObject = stream;
+                video.play();
+            } catch (e) {
+                console.error("Camera failed", e);
+            }
+
+            // Init Tracker
+            window.IndoorNav.init(video, voCanvas);
+            window.IndoorNav.updateLoop();
+
+            // Listen for updates
+            window.addEventListener('position-update', (e) => {
+                const { x, y, heading } = e.detail;
+                path.push({ x, y });
+
+                elX.innerText = x.toFixed(2);
+                elY.innerText = y.toFixed(2);
+                elH.innerText = (heading * 180 / Math.PI).toFixed(0);
+                elS.innerText = window.IndoorNav.stepDetector.stepCount;
+
+                drawMap();
+            });
+        }
+
+        function reset() {
+            path = [{ x: 0, y: 0 }];
+            window.IndoorNav.x = 0;
+            window.IndoorNav.y = 0;
+            window.IndoorNav.stepDetector.stepCount = 0;
+            drawMap();
+        }
+    </script>
+</body>
+
+</html>
