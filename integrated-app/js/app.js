@@ -71,8 +71,8 @@ class AppController {
         }
 
         this.log("System Starting...", "info");
-        this.updateStatus("Initializing..."); // Keep this for the main status display
-        this.btnStart.innerHTML = '<span class="icon">⏳</span> Loading...'; // Keep this for the button
+        this.updateStatus("Initializing...");
+        this.btnStart.innerHTML = '⏳';
 
         // 1. Permissions & Audio Unlock
         this.access.enable();
@@ -99,15 +99,15 @@ class AppController {
             this.log(`Camera Active: ${this.video.videoWidth}x${this.video.videoHeight}`, "info");
         } catch (e) {
             alert("Camera failed: " + e.message);
-            this.resetStartButton(); // Keep this
+            this.resetStartButton();
             return;
         }
 
         // 3. Load Model
-        this.updateStatus("Loading AI Model..."); // Keep this for main status
+        this.updateStatus("Loading AI Model...");
         this.log("Loading AI Model (COCO-SSD)...", "info");
         await this.vision.load();
-        this.updateStatus("System Active"); // Keep this for main status
+        this.updateStatus("System Active");
         this.log("AI Model Ready. Diagnostics Online.", "info");
 
         // 4. Start Sensors
@@ -118,10 +118,8 @@ class AppController {
         this.access.announce("System started. Ready.", 2);
 
         // Update Button State
-        this.btnStart.innerHTML = '<span class="icon">⏹</span> Stop';
-        this.btnStart.classList.replace('btn-primary', 'btn-secondary'); // Visual toggle
-        this.btnStart.style.background = 'rgba(255, 50, 50, 0.2)'; // Manual override for stop color
-        this.btnStart.style.borderColor = 'rgba(255, 50, 50, 0.5)';
+        this.btnStart.innerHTML = '⏹';
+        this.btnStart.style.background = 'rgba(255, 50, 50, 0.4)';
     }
 
     stop() {
@@ -136,14 +134,17 @@ class AppController {
     }
 
     resetStartButton() {
-        this.btnStart.innerHTML = '<span class="icon">🚀</span> Start';
-        this.btnStart.className = 'btn-primary'; // Reset class
+        this.btnStart.innerHTML = '▶';
+        this.btnStart.className = 'icon-btn';
         this.btnStart.style.background = '';
-        this.btnStart.style.borderColor = '';
     }
 
     updateStatus(text) {
-        if (this.elSystemStatus) this.elSystemStatus.innerText = text;
+        // Find the blink-dot context or header status if possible, or just log it.
+        // In this dashboard, we don't have a direct "status text" container except log.
+        // We can update the Live Indicator text as a proxy.
+        const indicator = document.querySelector('.live-indicator .sub-text');
+        if (indicator) indicator.innerText = `STATUS: ${text.toUpperCase()}`;
     }
 
     setTarget() {
@@ -153,9 +154,9 @@ class AppController {
         this.log(`Target Set: Local (0, 5m).`, "info");
 
         const btn = document.getElementById('btn-set-target');
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '<span class="icon">✅</span> Set!';
-        setTimeout(() => btn.innerHTML = originalText, 1500);
+        // Visual feedback
+        btn.style.color = '#00d26a';
+        setTimeout(() => btn.style.color = '', 1000);
     }
 
     log(msg, type = "info") {
