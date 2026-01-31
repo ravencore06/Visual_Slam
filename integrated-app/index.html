@@ -4,69 +4,163 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Indoor Nav PWA</title>
+    <title>Navigator Diagnostic Suite</title>
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="style.css">
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
     <!-- Load TensorFlow.js -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@latest/dist/coco-ssd.min.js"></script>
 </head>
 
-<body>
-    <!-- Layer 1: Camera Feed -->
-    <div id="video-container">
-        <video id="video" playsinline autoplay muted></video>
+<body class="theme-dark">
+    <div class="app-layout">
+        <!-- 1. Sidebar -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="logo-icon">🧭</div>
+                <div class="brand-text">
+                    <h1>NAVIGATOR</h1>
+                    <span>DIAGNOSTIC SUITE</span>
+                </div>
+            </div>
+
+            <nav class="main-nav">
+                <a href="#" class="nav-item active">
+                    <span class="icon">dashboard</span> Dashboard
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="icon">map</span> Map Management
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="icon">analytics</span> Model Diagnostics
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="icon">devices</span> Device Status
+                </a>
+                <div class="spacer"></div>
+                <div class="system-monitor">
+                    <span class="label">SYSTEM UPTIME</span>
+                    <span class="status-badge success">ACTIVE</span>
+                    <div class="progress-bar">
+                        <div class="fill" style="width: 100%"></div>
+                    </div>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- 2. Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="top-bar">
+                <div class="session-info">
+                    <h2>REAL-TIME SESSION <span class="blink-dot"></span></h2>
+                </div>
+                <div class="header-stats">
+                    <div class="stat-group">
+                        <label>EDGE AI LATENCY</label>
+                        <span class="value success-text">42ms</span>
+                    </div>
+                    <div class="stat-group">
+                        <label>OFFLINE SYNC</label>
+                        <span class="value">Cloud Local</span>
+                    </div>
+                    <div class="stat-group">
+                        <label>CALIBRATION</label>
+                        <span class="value warning-text">Optimal</span>
+                    </div>
+                    <div class="user-profile">
+                        <div class="avatar">JD</div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Video Feed Area -->
+            <div class="video-panel">
+                <div class="video-wrapper">
+                    <video id="video" playsinline autoplay muted></video>
+                    <canvas id="canvas"></canvas>
+
+                    <!-- Overlays -->
+                    <div class="live-indicator">
+                        <span class="dot"></span> LIVE DIAGNOSTIC STREAM
+                        <span class="sub-text">DEVICE_ID: NX-7200-B // LOCALHOST:8080</span>
+                    </div>
+                    <div class="video-controls">
+                        <button class="icon-btn" onclick="app.setTarget()">📍</button>
+                        <button class="icon-btn" onclick="app.start()">▶</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>DETECTION ACCURACY</h3>
+                    <div class="big-value">96.4% <span class="trend up">2.1%</span></div>
+                </div>
+                <div class="stat-card">
+                    <h3>MODEL VERSION</h3>
+                    <div class="big-value">v4.2-LITE</div>
+                    <span class="sub-label">TENSORFLOW.JS</span>
+                </div>
+                <div class="stat-card">
+                    <h3>OBJECT COUNT (AVG)</h3>
+                    <div class="big-value" id="obj-count-display">0</div>
+                    <span class="sub-label">PER FRAME</span>
+                </div>
+            </div>
+        </main>
+
+        <!-- 3. Right Info Panel -->
+        <aside class="info-sidebar">
+            <!-- Logs Section -->
+            <div class="panel-section flex-grow">
+                <div class="section-header">
+                    <h3>NAVIGATION LOGS</h3>
+                    <span class="mono-id">SESSION_ID: 88219</span>
+                </div>
+                <div class="log-container" id="log-list">
+                    <div class="log-entry">
+                        <span class="time">14:22:01</span>
+                        <span class="msg info">System Initialized. Waiting for start...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MiniMap Section -->
+            <div class="panel-section map-section">
+                <div class="section-header">
+                    <h3>LIVE ESTIMATED PATH</h3>
+                </div>
+                <div id="minimap-container">
+                    <canvas id="minimap"></canvas>
+                    <!-- CRT Grid Overlay applied via CSS -->
+                    <div class="grid-overlay"></div>
+                    <div class="map-labels">
+                        <span class="label-traj">CURRENT TRAJECTORY</span>
+                        <span class="label-land">CONFIRMED LANDMARK</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
     </div>
 
-    <!-- Layer 2: AR Overlay -->
-    <canvas id="canvas"></canvas>
-
-    <!-- Layer 3: Glass UI HUD -->
-    <div id="hud-layer">
-        <!-- Top Bar -->
-        <div class="hud-top">
-            <div class="status-panel glass">
-                <div class="status-item">POS <span id="pos-display" class="status-value">0.0, 0.0</span></div>
-                <div class="status-item">HDG <span id="hdg-display" class="status-value">0&deg;</span></div>
-            </div>
-
-            <div id="minimap-container" class="glass">
-                <canvas id="minimap"></canvas>
-            </div>
-        </div>
-
-        <!-- Center Notification Area -->
-        <div class="hud-center">
-            <div id="instruction" class="glass-pill">Ready to Navigate</div>
-        </div>
-
-        <!-- Bottom Controls -->
-        <div class="hud-bottom glass-panel">
-            <div class="row">
-                <button id="btn-start" class="btn-primary" onclick="app.start()">
-                    <span class="icon">🚀</span> Start
-                </button>
-                <button id="btn-set-target" class="btn-secondary" onclick="app.setTarget()">
-                    <span class="icon">📍</span> Target (5m)
-                </button>
-            </div>
-            <div id="system-status">System Idle</div>
-        </div>
-    </div>
-
+    <!-- Scripts -->
     <script src="js/odometry.js"></script>
     <script src="js/vision.js"></script>
-    <!-- Assuming this exists or will be merged, checking file list later if needed, but keeping standard structure -->
     <script src="js/navigation.js"></script>
     <script src="js/accessibility.js"></script>
     <script src="js/minimap.js"></script>
     <script src="js/app.js"></script>
     <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('service-worker.js')
-                .then(reg => console.log('SW Registered', reg))
-                .catch(err => console.log('SW Failed', err));
-        }
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js');
     </script>
 </body>
 

@@ -20,6 +20,10 @@ class AppController {
         this.elSystemStatus = document.getElementById('system-status');
         this.btnStart = document.getElementById('btn-start');
         this.hudLayer = document.getElementById('hud-layer');
+
+        // Dashboard UI Elements
+        this.elObjCount = document.getElementById('obj-count-display');
+        this.elLogList = document.getElementById('log-list');
     }
 
     async start() {
@@ -28,15 +32,16 @@ class AppController {
             return;
         }
 
-        console.log("App Starting...");
-        this.updateStatus("Initializing...");
-        this.btnStart.innerHTML = '<span class="icon">⏳</span> Loading...';
+        this.log("System Starting...", "info");
+        this.updateStatus("Initializing..."); // Keep this for the main status display
+        this.btnStart.innerHTML = '<span class="icon">⏳</span> Loading...'; // Keep this for the button
 
         // 1. Permissions & Audio Unlock
         this.access.enable();
         if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
             try {
                 await DeviceMotionEvent.requestPermission();
+                this.log("Sensors: Permission Granted", "info");
             } catch (e) {
                 console.warn("Permission denied/error", e);
             }
@@ -53,16 +58,19 @@ class AppController {
 
             this.canvas.width = this.video.videoWidth;
             this.canvas.height = this.video.videoHeight;
+            this.log(`Camera Active: ${this.video.videoWidth}x${this.video.videoHeight}`, "info");
         } catch (e) {
             alert("Camera failed: " + e.message);
-            this.resetStartButton();
+            this.resetStartButton(); // Keep this
             return;
         }
 
         // 3. Load Model
-        this.updateStatus("Loading AI Model...");
+        this.updateStatus("Loading AI Model..."); // Keep this for main status
+        this.log("Loading AI Model (COCO-SSD)...", "info");
         await this.vision.load();
-        this.updateStatus("System Active");
+        this.updateStatus("System Active"); // Keep this for main status
+        this.log("AI Model Ready. Diagnostics Online.", "info");
 
         // 4. Start Sensors
         this.odometry.start();
@@ -86,6 +94,7 @@ class AppController {
         this.resetStartButton();
         this.updateStatus("System Idle");
         this.access.announce("System stopped.", 1);
+        this.log("System Halted.", "warning");
     }
 
     resetStartButton() {
@@ -103,11 +112,28 @@ class AppController {
         const msg = this.nav.setTarget(0, 5);
         this.minimap.setTarget(0, 5);
         this.access.announce(msg, 2);
+        this.log(`Target Set: Local (0, 5m).`, "info");
 
         const btn = document.getElementById('btn-set-target');
         const originalText = btn.innerHTML;
         btn.innerHTML = '<span class="icon">✅</span> Set!';
         setTimeout(() => btn.innerHTML = originalText, 1500);
+    }
+
+    log(msg, type = "info") {
+        if (!this.elLogList) return;
+
+        const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: "numeric", minute: "numeric", second: "numeric" });
+        const div = document.createElement('div');
+        div.className = `log-entry ${type}`;
+        div.innerHTML = `<span class="time">${time}</span><span class="msg">${msg}</span>`;
+
+        this.elLogList.prepend(div);
+
+        // Limit log size
+        if (this.elLogList.children.length > 50) {
+            this.elLogList.removeChild(this.elLogList.lastChild);
+        }
     }
 
     async loop() {
@@ -134,6 +160,9 @@ class AppController {
             if (predictions) {
                 this.drawPredictions(predictions);
                 this.checkObstacles(predictions);
+
+                // Update Dashboard Stat
+                if (this.elObjCount) this.elObjCount.innerText = predictions.length;
             }
         }
 
@@ -143,7 +172,7 @@ class AppController {
             if (navUpdate.instruction) {
                 const priority = (navUpdate.event === 'stop' || navUpdate.event === 'arrived') ? 2 : 1;
                 this.access.announce(navUpdate.instruction, priority);
-                if (this.elInstruction) this.elInstruction.innerText = navUpdate.instruction;
+                this.log(`Nav: ${navUpdate.instruction}`, "info");
             }
             if (navUpdate.event) {
                 this.access.vibrate(navUpdate.event);
@@ -173,11 +202,13 @@ class AppController {
             if (isCentral && isClose) {
                 this.access.announce(`Obstacle: ${p.class} ahead!`, 2);
                 this.access.vibrate('stop');
+                this.log(`OBSTACLE DETECTED: ${p.class} (${p.depth ? p.depth.toFixed(1) + 'm' : 'Close'})`, "obstacle");
 
-                // Visual Alert (New Class Toggle)
-                if (this.hudLayer) {
-                    this.hudLayer.classList.add('alert-mode');
-                    setTimeout(() => this.hudLayer.classList.remove('alert-mode'), 1000);
+                // Visual Alert
+                const vPanel = document.querySelector('.video-panel');
+                if (vPanel) {
+                    vPanel.style.borderColor = 'var(--warning)';
+                    setTimeout(() => vPanel.style.borderColor = 'var(--border-color)', 1000);
                 }
 
                 this.lastAlertTime = now;
@@ -188,27 +219,25 @@ class AppController {
 
     drawPredictions(predictions) {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        this.ctx.font = '14px Inter';
+        this.ctx.font = '14px JetBrains Mono';
         this.ctx.lineWidth = 2;
 
         predictions.forEach(p => {
             const [x, y, w, h] = p.bbox;
 
-            // Color based on class
-            const color = p.class === 'person' ? '#00f2ff' : '#7000ff';
+            const color = '#00d26a'; // Dashboard Green
             this.ctx.strokeStyle = color;
             this.ctx.strokeRect(x, y, w, h);
 
+            // Label Box
+            const text = `${p.class.toUpperCase()} ${(p.score * 100).toFixed(0)}%`;
+            const textWidth = this.ctx.measureText(text).width;
+
             this.ctx.fillStyle = color;
-            this.ctx.globalAlpha = 0.2;
-            this.ctx.fillRect(x, y, w, h);
-            this.ctx.globalAlpha = 1.0;
+            this.ctx.fillRect(x, y - 20, textWidth + 10, 20);
 
-            let label = `${p.class}`; // Simplified label
-            if (p.depth) label += ` ${p.depth.toFixed(1)}m`;
-
-            this.ctx.fillStyle = '#fff';
-            this.ctx.fillText(label, x + 5, y > 20 ? y - 5 : 20);
+            this.ctx.fillStyle = '#000';
+            this.ctx.fillText(text, x + 5, y - 6);
         });
     }
 }
