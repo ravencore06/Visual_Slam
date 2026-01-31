@@ -4,7 +4,7 @@ class AppController {
         this.odometry = new OdometryModule();
         this.nav = new NavigationModule();
         this.access = new AccessibilityModule();
-        this.minimap = new MiniMap('minimap'); // NEW
+        this.minimap = new MiniMap('minimap');
 
         this.video = document.getElementById('video');
         this.canvas = document.getElementById('canvas');
@@ -12,13 +12,29 @@ class AppController {
 
         this.isRunning = false;
         this.lastAlertTime = 0;
+
+        // UI Elements
+        this.elPos = document.getElementById('pos-display');
+        this.elHdg = document.getElementById('hdg-display');
+        this.elInstruction = document.getElementById('instruction');
+        this.elSystemStatus = document.getElementById('system-status');
+        this.btnStart = document.getElementById('btn-start');
+        this.hudLayer = document.getElementById('hud-layer');
     }
 
     async start() {
+        if (this.isRunning) {
+            this.stop();
+            return;
+        }
+
         console.log("App Starting...");
+        this.updateStatus("Initializing...");
+        this.btnStart.innerHTML = '<span class="icon">⏳</span> Loading...';
+
         // 1. Permissions & Audio Unlock
         this.access.enable();
-        if (typeof DeviceMotionEvent.requestPermission === 'function') {
+        if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
             try {
                 await DeviceMotionEvent.requestPermission();
             } catch (e) {
@@ -39,13 +55,14 @@ class AppController {
             this.canvas.height = this.video.videoHeight;
         } catch (e) {
             alert("Camera failed: " + e.message);
+            this.resetStartButton();
             return;
         }
 
         // 3. Load Model
-        document.getElementById('status').innerText = "Loading Model...";
+        this.updateStatus("Loading AI Model...");
         await this.vision.load();
-        document.getElementById('status').innerText = "Running";
+        this.updateStatus("System Active");
 
         // 4. Start Sensors
         this.odometry.start();
@@ -53,18 +70,44 @@ class AppController {
         this.isRunning = true;
         this.loop();
         this.access.announce("System started. Ready.", 2);
+
+        // Update Button State
+        this.btnStart.innerHTML = '<span class="icon">⏹</span> Stop';
+        this.btnStart.classList.replace('btn-primary', 'btn-secondary'); // Visual toggle
+        this.btnStart.style.background = 'rgba(255, 50, 50, 0.2)'; // Manual override for stop color
+        this.btnStart.style.borderColor = 'rgba(255, 50, 50, 0.5)';
+    }
+
+    stop() {
+        this.isRunning = false;
+        this.odometry.stop();
+        this.video.pause();
+        this.video.srcObject = null;
+        this.resetStartButton();
+        this.updateStatus("System Idle");
+        this.access.announce("System stopped.", 1);
+    }
+
+    resetStartButton() {
+        this.btnStart.innerHTML = '<span class="icon">🚀</span> Start';
+        this.btnStart.className = 'btn-primary'; // Reset class
+        this.btnStart.style.background = '';
+        this.btnStart.style.borderColor = '';
+    }
+
+    updateStatus(text) {
+        if (this.elSystemStatus) this.elSystemStatus.innerText = text;
     }
 
     setTarget() {
-        // For demo: Set target 5 meters North of current position
-        // const pos = this.odometry.getPosition(); // Unused in simple demo
-
-        // Set target at (0, 5) relative to start
         const msg = this.nav.setTarget(0, 5);
-        this.minimap.setTarget(0, 5); // Update Map
-
+        this.minimap.setTarget(0, 5);
         this.access.announce(msg, 2);
-        // document.getElementById('target-info').innerText = "Target: (0, 5)"; // Removed in new UI
+
+        const btn = document.getElementById('btn-set-target');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<span class="icon">✅</span> Set!';
+        setTimeout(() => btn.innerHTML = originalText, 1500);
     }
 
     async loop() {
@@ -78,21 +121,9 @@ class AppController {
         // B. Odometry State
         const pos = this.odometry.getPosition();
 
-        // Update UI (New IDs)
-        const posInfo = document.getElementById('pos-info');
-        if (posInfo) {
-            const hdgInfo = document.getElementById('hdg-info');
-            if (hdgInfo) {
-                // Update specific elements if they exist
-                if (posInfo.childNodes[0]) {
-                    posInfo.childNodes[0].textContent = `Pos: (${pos.x.toFixed(1)}, ${pos.y.toFixed(1)}) `;
-                }
-                hdgInfo.innerHTML = `Hdg: ${(pos.heading * 180 / Math.PI).toFixed(0)}&deg;`;
-            } else {
-                // Fallback to old behavior
-                posInfo.innerHTML = `Pos: (${pos.x.toFixed(1)}, ${pos.y.toFixed(1)}) <br> Hdg: ${(pos.heading * 180 / Math.PI).toFixed(0)}&deg;`;
-            }
-        }
+        // Update UI
+        if (this.elPos) this.elPos.innerText = `${pos.x.toFixed(1)}, ${pos.y.toFixed(1)}`;
+        if (this.elHdg) this.elHdg.innerHTML = `${(pos.heading * 180 / Math.PI).toFixed(0)}&deg;`;
 
         // Update MiniMap
         this.minimap.update(pos);
@@ -102,7 +133,7 @@ class AppController {
             const predictions = await this.vision.detect(this.video);
             if (predictions) {
                 this.drawPredictions(predictions);
-                this.checkObstacles(predictions); // NEW: Obstacle Check
+                this.checkObstacles(predictions);
             }
         }
 
@@ -112,9 +143,7 @@ class AppController {
             if (navUpdate.instruction) {
                 const priority = (navUpdate.event === 'stop' || navUpdate.event === 'arrived') ? 2 : 1;
                 this.access.announce(navUpdate.instruction, priority);
-
-                const instrEl = document.getElementById('instruction');
-                if (instrEl) instrEl.innerText = navUpdate.instruction;
+                if (this.elInstruction) this.elInstruction.innerText = navUpdate.instruction;
             }
             if (navUpdate.event) {
                 this.access.vibrate(navUpdate.event);
@@ -123,7 +152,7 @@ class AppController {
             // Continuous feedback for rotation
             if (navUpdate.state === 'ROTATING' && Math.abs(navUpdate.diff) > 20) {
                 const dir = navUpdate.diff > 0 ? "Right" : "Left";
-                this.access.announce(`Turn ${dir} ${Math.round(Math.abs(navUpdate.diff))} degrees`, 1);
+                // Throttle this announcement in a real app, keeping simple here
             }
         }
 
@@ -139,20 +168,16 @@ class AppController {
         for (let p of predictions) {
             const [x, y, w, h] = p.bbox;
             const isCentral = (x < centerX && (x + w) > centerX);
-
-            // Use Depth if available, else fallback to height
             const isClose = p.depth ? (p.depth < 1.5) : (h > this.canvas.height * 0.3);
 
             if (isCentral && isClose) {
-                // Trigger Alert
                 this.access.announce(`Obstacle: ${p.class} ahead!`, 2);
-                this.access.vibrate('stop'); // Use stop pattern
+                this.access.vibrate('stop');
 
-                // Visual Alert
-                const hud = document.getElementById('video-container'); // Use container for border flash
-                if (hud) {
-                    hud.style.border = "5px solid red";
-                    setTimeout(() => hud.style.border = "none", 1000);
+                // Visual Alert (New Class Toggle)
+                if (this.hudLayer) {
+                    this.hudLayer.classList.add('alert-mode');
+                    setTimeout(() => this.hudLayer.classList.remove('alert-mode'), 1000);
                 }
 
                 this.lastAlertTime = now;
@@ -163,18 +188,27 @@ class AppController {
 
     drawPredictions(predictions) {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        this.ctx.font = '16px Courier New';
-        this.ctx.strokeStyle = '#00FFFF';
-        this.ctx.fillStyle = '#00FFFF';
+        this.ctx.font = '14px Inter';
+        this.ctx.lineWidth = 2;
 
         predictions.forEach(p => {
             const [x, y, w, h] = p.bbox;
+
+            // Color based on class
+            const color = p.class === 'person' ? '#00f2ff' : '#7000ff';
+            this.ctx.strokeStyle = color;
             this.ctx.strokeRect(x, y, w, h);
 
-            let label = `${p.class} ${Math.round(p.score * 100)}%`;
+            this.ctx.fillStyle = color;
+            this.ctx.globalAlpha = 0.2;
+            this.ctx.fillRect(x, y, w, h);
+            this.ctx.globalAlpha = 1.0;
+
+            let label = `${p.class}`; // Simplified label
             if (p.depth) label += ` ${p.depth.toFixed(1)}m`;
 
-            this.ctx.fillText(label, x, y > 10 ? y - 5 : 10);
+            this.ctx.fillStyle = '#fff';
+            this.ctx.fillText(label, x + 5, y > 20 ? y - 5 : 20);
         });
     }
 }

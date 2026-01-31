@@ -6,109 +6,61 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Indoor Nav PWA</title>
     <link rel="manifest" href="manifest.json">
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            background: #000;
-            color: white;
-            font-family: sans-serif;
-        }
-
-        #video-container {
-            position: relative;
-            width: 100vw;
-            height: 60vh;
-            background: #222;
-        }
-
-        #video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        #canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-        }
-
-        #controls {
-            height: 40vh;
-            padding: 20px;
-            background: #333;
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-
-        .row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-        }
-
-        button {
-            padding: 15px;
-            font-size: 16px;
-            border: none;
-            border-radius: 8px;
-            background: #007bff;
-            color: white;
-            width: 48%;
-        }
-
-        button.stop {
-            background: #dc3545;
-        }
-
-        #status {
-            font-size: 14px;
-            color: #aaa;
-            text-align: center;
-            margin-top: 10px;
-        }
-
-        #instruction {
-            font-size: 24px;
-            font-weight: bold;
-            text-align: center;
-            color: #fff;
-            margin: 10px 0;
-            min-height: 60px;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
     <!-- Load TensorFlow.js -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@latest/dist/coco-ssd.min.js"></script>
 </head>
 
 <body>
+    <!-- Layer 1: Camera Feed -->
     <div id="video-container">
         <video id="video" playsinline autoplay muted></video>
-        <canvas id="canvas"></canvas>
     </div>
 
-    <div id="controls">
-        <div id="instruction">Ready to Start</div>
+    <!-- Layer 2: AR Overlay -->
+    <canvas id="canvas"></canvas>
 
-        <div class="row">
-            <div id="pos-info">Pos: (0,0) <br> <span id="hdg-info">Hdg: 0&deg;</span></div>
-            <div id="target-info">Target: None</div>
+    <!-- Layer 3: Glass UI HUD -->
+    <div id="hud-layer">
+        <!-- Top Bar -->
+        <div class="hud-top">
+            <div class="status-panel glass">
+                <div class="status-item">POS <span id="pos-display" class="status-value">0.0, 0.0</span></div>
+                <div class="status-item">HDG <span id="hdg-display" class="status-value">0&deg;</span></div>
+            </div>
+
+            <div id="minimap-container" class="glass">
+                <canvas id="minimap"></canvas>
+            </div>
         </div>
 
-        <div class="row">
-            <button id="btn-start" onclick="app.start()">Start Navigation</button>
-            <button id="btn-set-target" onclick="app.setTarget()">Set Target (5m)</button>
+        <!-- Center Notification Area -->
+        <div class="hud-center">
+            <div id="instruction" class="glass-pill">Ready to Navigate</div>
         </div>
 
-        <div id="status">System Idle</div>
+        <!-- Bottom Controls -->
+        <div class="hud-bottom glass-panel">
+            <div class="row">
+                <button id="btn-start" class="btn-primary" onclick="app.start()">
+                    <span class="icon">🚀</span> Start
+                </button>
+                <button id="btn-set-target" class="btn-secondary" onclick="app.setTarget()">
+                    <span class="icon">📍</span> Target (5m)
+                </button>
+            </div>
+            <div id="system-status">System Idle</div>
+        </div>
     </div>
 
+    <script src="js/odometry.js"></script>
+    <script src="js/vision.js"></script>
+    <!-- Assuming this exists or will be merged, checking file list later if needed, but keeping standard structure -->
+    <script src="js/navigation.js"></script>
+    <script src="js/accessibility.js"></script>
+    <script src="js/minimap.js"></script>
+    <script src="js/app.js"></script>
     <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('service-worker.js')
