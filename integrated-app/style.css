@@ -519,3 +519,171 @@ body {
         height: auto;
     }
 }
+
+/* SPA View Logic */
+.view-panel {
+    display: none;
+    flex-direction: column;
+    height: 100%;
+    animation: fadeIn 0.3s ease;
+    gap: 20px;
+}
+
+.view-panel.active-view {
+    display: flex;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 16px;
+    margin-bottom: 8px;
+}
+
+.panel-header h2 {
+    font-size: 18px;
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.btn-primary-small {
+    background: var(--accent-blue);
+    border: none;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* Map Management Styles */
+.map-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 20px;
+}
+
+.map-card {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 16px;
+    transition: 0.2s;
+}
+
+.map-card.active {
+    border-color: var(--success);
+}
+
+.map-preview {
+    height: 120px;
+    background: #000;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Simulated Map Preview Pattern */
+.trigger-map {
+    background-image: radial-gradient(var(--accent-blue) 1px, transparent 1px);
+    background-size: 10px 10px;
+    opacity: 0.5;
+}
+
+.map-info h4 {
+    margin: 0 0 4px 0;
+    font-size: 14px;
+}
+
+.map-info span {
+    font-size: 10px;
+    color: var(--text-secondary);
+}
+
+/* Analytics Bar Charts */
+.chart-container {
+    background: var(--bg-panel);
+    border-radius: 12px;
+    padding: 24px;
+    border: 1px solid var(--border-color);
+}
+
+.bar-group {
+    margin-bottom: 20px;
+}
+
+.bar-group label {
+    display: block;
+    font-size: 11px;
+    margin-bottom: 6px;
+    color: var(--text-secondary);
+}
+
+.bar-track {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+}
+
+.bar-fill {
+    height: 100%;
+    background: var(--accent-blue);
+    border-radius: 4px;
+}
+
+.bar-fill.warning {
+    background: var(--warning);
+}
+
+.bar-fill.error {
+    background: #ff3b30;
+}
+
+.bar-group .value {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    float: right;
+    margin-top: -18px;
+}
+
+/* Device Table */
+.device-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.device-table th {
+    text-align: left;
+    color: var(--text-secondary);
+    font-size: 10px;
+    padding: 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.device-table td {
+    padding: 16px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+}
+
+.device-table tr:last-child td {
+    border-bottom: none;
+}

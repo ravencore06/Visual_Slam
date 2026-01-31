@@ -57,7 +57,7 @@
 
         <!-- 2. Main Content -->
         <main class="main-content">
-            <!-- Header -->
+            <!-- Header (Persistent) -->
             <header class="top-bar">
                 <div class="session-info">
                     <h2>REAL-TIME SESSION <span class="blink-dot"></span></h2>
@@ -81,41 +81,153 @@
                 </div>
             </header>
 
-            <!-- Video Feed Area -->
-            <div class="video-panel">
-                <div class="video-wrapper">
-                    <video id="video" playsinline autoplay muted></video>
-                    <canvas id="canvas"></canvas>
+            <!-- VIEW: DASHBOARD (Default) -->
+            <div id="view-dashboard" class="view-panel active-view">
+                <!-- Video Feed Area -->
+                <div class="video-panel">
+                    <div class="video-wrapper">
+                        <video id="video" playsinline autoplay muted></video>
+                        <canvas id="canvas"></canvas>
 
-                    <!-- Overlays -->
-                    <div class="live-indicator">
-                        <span class="dot"></span> LIVE DIAGNOSTIC STREAM
-                        <span class="sub-text">DEVICE_ID: NX-7200-B // LOCALHOST:8080</span>
+                        <!-- Overlays -->
+                        <div class="live-indicator">
+                            <span class="dot"></span> LIVE DIAGNOSTIC STREAM
+                            <span class="sub-text">DEVICE_ID: NX-7200-B // LOCALHOST:8080</span>
+                        </div>
+                        <div class="video-controls">
+                            <button class="icon-btn" onclick="app.setTarget()">📍</button>
+                            <button class="icon-btn" onclick="app.start()">▶</button>
+                        </div>
                     </div>
-                    <div class="video-controls">
-                        <button class="icon-btn" onclick="app.setTarget()">📍</button>
-                        <button class="icon-btn" onclick="app.start()">▶</button>
+                </div>
+
+                <!-- Bottom Stats Grid -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>DETECTION ACCURACY</h3>
+                        <div class="big-value">96.4% <span class="trend up">2.1%</span></div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>MODEL VERSION</h3>
+                        <div class="big-value">v4.2-LITE</div>
+                        <span class="sub-label">TENSORFLOW.JS</span>
+                    </div>
+                    <div class="stat-card">
+                        <h3>OBJECT COUNT (AVG)</h3>
+                        <div class="big-value" id="obj-count-display">0</div>
+                        <span class="sub-label">PER FRAME</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Bottom Stats Grid -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <h3>DETECTION ACCURACY</h3>
-                    <div class="big-value">96.4% <span class="trend up">2.1%</span></div>
+            <!-- VIEW: MAP MANAGEMENT -->
+            <div id="view-map" class="view-panel" style="display: none;">
+                <div class="panel-header">
+                    <h2>Map Management</h2>
+                    <button class="btn-primary-small">Upload Floor Plan</button>
                 </div>
-                <div class="stat-card">
-                    <h3>MODEL VERSION</h3>
-                    <div class="big-value">v4.2-LITE</div>
-                    <span class="sub-label">TENSORFLOW.JS</span>
-                </div>
-                <div class="stat-card">
-                    <h3>OBJECT COUNT (AVG)</h3>
-                    <div class="big-value" id="obj-count-display">0</div>
-                    <span class="sub-label">PER FRAME</span>
+                <div class="map-grid">
+                    <div class="map-card active">
+                        <div class="map-preview trigger-map"></div>
+                        <div class="map-info">
+                            <h4>Ground Floor (Current)</h4>
+                            <span>Last updated: Just now</span>
+                        </div>
+                        <div class="status-badge success">ACTIVE</div>
+                    </div>
+                    <div class="map-card">
+                        <div class="map-preview"></div>
+                        <div class="map-info">
+                            <h4>Basement Level 1</h4>
+                            <span>No recent activity</span>
+                        </div>
+                    </div>
                 </div>
             </div>
+
+            <!-- VIEW: ANALYTICS -->
+            <div id="view-analytics" class="view-panel" style="display: none;">
+                <div class="panel-header">
+                    <h2>System Diagnostics</h2>
+                </div>
+                <div class="chart-container">
+                    <h3>Performance Metrics (Last 60s)</h3>
+                    <div class="bar-chart">
+                        <div class="bar-group">
+                            <label>Visual Odometry Confidence</label>
+                            <div class="bar-track">
+                                <div class="bar-fill" style="width: 92%"></div>
+                            </div>
+                            <span class="value">92%</span>
+                        </div>
+                        <div class="bar-group">
+                            <label>Frame Processing Time (ms)</label>
+                            <div class="bar-track">
+                                <div class="bar-fill warning" style="width: 45%"></div>
+                            </div>
+                            <span class="value">18ms</span>
+                        </div>
+                        <div class="bar-group">
+                            <label>Memory Usage (Heap)</label>
+                            <div class="bar-track">
+                                <div class="bar-fill" style="width: 30%"></div>
+                            </div>
+                            <span class="value">30%</span>
+                        </div>
+                        <div class="bar-group">
+                            <label>GPU Utilization (WebGL)</label>
+                            <div class="bar-track">
+                                <div class="bar-fill error" style="width: 85%"></div>
+                            </div>
+                            <span class="value">85%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: DEVICES -->
+            <div id="view-devices" class="view-panel" style="display: none;">
+                <div class="panel-header">
+                    <h2>Connected Hardware</h2>
+                </div>
+                <table class="device-table">
+                    <thead>
+                        <tr>
+                            <th>DEVICE NAME</th>
+                            <th>TYPE</th>
+                            <th>STATUS</th>
+                            <th>LATENCY</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Primary Camera (Back)</td>
+                            <td>Optical Sensor</td>
+                            <td><span class="status-badge success">ONLINE</span></td>
+                            <td>33ms</td>
+                        </tr>
+                        <tr>
+                            <td>Inertial Measurement Unit</td>
+                            <td>Accelerometer/Gyro</td>
+                            <td><span class="status-badge success">ONLINE</span></td>
+                            <td>2ms</td>
+                        </tr>
+                        <tr>
+                            <td>Network Gateway</td>
+                            <td>WiFi 6</td>
+                            <td><span class="status-badge warning">UNSTABLE</span></td>
+                            <td>120ms</td>
+                        </tr>
+                        <tr>
+                            <td>Haptic Feedback Filter</td>
+                            <td>Output Actuator</td>
+                            <td><span class="status-badge success">READY</span></td>
+                            <td>0ms</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
         </main>
 
         <!-- 3. Right Info Panel -->

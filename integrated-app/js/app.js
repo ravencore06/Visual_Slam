@@ -24,6 +24,44 @@ class AppController {
         // Dashboard UI Elements
         this.elObjCount = document.getElementById('obj-count-display');
         this.elLogList = document.getElementById('log-list');
+
+        this.initNavigation();
+    }
+
+    initNavigation() {
+        const navItems = document.querySelectorAll('.nav-item');
+        navItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                // Remove active class from all
+                navItems.forEach(n => n.classList.remove('active'));
+                // Add active to clicked
+                item.classList.add('active');
+
+                // Get view name from text content (simple mapping)
+                const text = item.innerText.trim();
+                if (text.includes('Dashboard')) this.navTo('view-dashboard');
+                else if (text.includes('Map')) this.navTo('view-map');
+                else if (text.includes('Diagnostics')) this.navTo('view-analytics');
+                else if (text.includes('Device')) this.navTo('view-devices');
+            });
+        });
+    }
+
+    navTo(viewId) {
+        // Hide all views
+        document.querySelectorAll('.view-panel').forEach(el => {
+            el.style.display = 'none';
+            el.classList.remove('active-view');
+        });
+
+        // Show target
+        const target = document.getElementById(viewId);
+        if (target) {
+            target.style.display = 'flex';
+            // Small timeout to allow display:flex to apply before adding class for animation
+            setTimeout(() => target.classList.add('active-view'), 10);
+        }
     }
 
     async start() {
