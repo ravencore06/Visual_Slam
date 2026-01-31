@@ -97,7 +97,7 @@
         <div id="instruction">Ready to Start</div>
 
         <div class="row">
-            <div id="pos-info">Pos: (0,0) <br> Hdg: 0&deg;</div>
+            <div id="pos-info">Pos: (0,0) <br> <span id="hdg-info">Hdg: 0&deg;</span></div>
             <div id="target-info">Target: None</div>
         </div>
 
@@ -109,15 +109,7 @@
         <div id="status">System Idle</div>
     </div>
 
-    <!-- Load Modules -->
-    <script src="js/vision.js"></script>
-    <script src="js/odometry.js"></script>
-    <script src="js/navigation.js"></script>
-    <script src="js/accessibility.js"></script>
-    <script src="js/app.js"></script>
-
     <script>
-        // Register Service Worker
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('service-worker.js')
                 .then(reg => console.log('SW Registered', reg))

@@ -27,9 +27,35 @@ class VisionModule {
 
         this.lastRun = now;
 
-        // Run inference
-        // tf.tidy is handled internally by coco-ssd usually, but good practice if using raw model
         const predictions = await this.model.detect(video);
-        return predictions;
+
+        // AI FILTERING & DEPTH ESTIMATION
+        return predictions
+            .filter(p => p.score > 0.6) // Filter low confidence
+            .map(p => {
+                // Estimate Depth: Simple heuristic based on bbox height relative to frame height
+                // Assumption: Object is on ground, camera at ~1.5m height.
+                // Distance ~= (FocalLength * RealHeight) / ImageHeight
+                // We simplify: depth = Factor / (bbox.height / video.height)
+
+                const hRatio = p.bbox[3] / video.videoHeight;
+                let depth = 0;
+
+                // Rough Real Heights (meters)
+                const realHeights = {
+                    'person': 1.7,
+                    'chair': 1.0,
+                    'table': 0.8,
+                    'couch': 0.9,
+                    'potted plant': 0.5
+                };
+
+                const realH = realHeights[p.class] || 1.0;
+                depth = realH / hRatio; // Very rough approximation
+
+                // Attach depth to prediction
+                p.depth = depth;
+                return p;
+            });
     }
 }

@@ -1,0 +1,186 @@
+body {
+    margin: 0;
+    overflow: hidden;
+    background: #000;
+    color: #e0e0e0;
+    font-family: 'Courier New', Courier, monospace;
+    /* Tech/Code look */
+}
+
+#video-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 0;
+}
+
+#video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.8;
+    /* Slight dim for UI visibility */
+}
+
+#canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+/* HUD Overlay Layer */
+#hud-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    pointer-events: none;
+    /* Let touches pass through to controls if needed */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+/* Top Bar: Status & MiniMap */
+.hud-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.status-panel {
+    background: rgba(0, 20, 40, 0.7);
+    border: 1px solid #00ffff;
+    border-radius: 8px;
+    padding: 10px;
+    backdrop-filter: blur(5px);
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+    min-width: 120px;
+}
+
+.status-item {
+    font-size: 12px;
+    color: #00ffff;
+    margin-bottom: 4px;
+}
+
+.status-value {
+    font-size: 16px;
+    font-weight: bold;
+    color: #fff;
+}
+
+#minimap-container {
+    width: 120px;
+    height: 120px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 2px solid #00ffff;
+    border-radius: 50%;
+    /* Circular Map */
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+}
+
+#minimap {
+    width: 100%;
+    height: 100%;
+}
+
+/* Center: Instruction */
+.hud-center {
+    text-align: center;
+    pointer-events: auto;
+}
+
+#instruction {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 24px;
+    font-weight: 600;
+    color: #fff;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.6);
+    padding: 10px 20px;
+    border-radius: 20px;
+    display: inline-block;
+    border-bottom: 2px solid #00ffff;
+}
+
+/* Bottom: Controls */
+.hud-bottom {
+    pointer-events: auto;
+    background: rgba(0, 20, 40, 0.8);
+    border-top: 1px solid #00ffff;
+    border-radius: 12px 12px 0 0;
+    padding: 15px;
+    backdrop-filter: blur(10px);
+}
+
+.row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+button {
+    flex: 1;
+    padding: 15px;
+    font-size: 16px;
+    font-weight: bold;
+    text-transform: uppercase;
+    border: 1px solid #00ffff;
+    border-radius: 6px;
+    background: rgba(0, 255, 255, 0.1);
+    color: #00ffff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+button:active {
+    background: rgba(0, 255, 255, 0.3);
+    transform: scale(0.98);
+}
+
+button.primary {
+    background: rgba(0, 255, 255, 0.2);
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+}
+
+button.stop {
+    border-color: #ff3333;
+    color: #ff3333;
+    background: rgba(255, 51, 51, 0.1);
+}
+
+button.stop:active {
+    background: rgba(255, 51, 51, 0.3);
+}
+
+/* Animations */
+@keyframes pulse-red {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.4);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(255, 0, 0, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 0, 0, 0);
+    }
+}
+
+.alert-mode {
+    animation: pulse-red 1s infinite;
+    border: 2px solid red !important;
+}
