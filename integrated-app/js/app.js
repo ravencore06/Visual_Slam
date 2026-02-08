@@ -86,6 +86,12 @@ class AppController {
         }
 
         // 2. Camera
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            alert("Camera API not available. This feature requires a secure context (HTTPS) or localhost.");
+            this.resetStartButton();
+            return;
+        }
+
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: { facingMode: 'environment' }
@@ -98,7 +104,8 @@ class AppController {
             this.canvas.height = this.video.videoHeight;
             this.log(`Camera Active: ${this.video.videoWidth}x${this.video.videoHeight}`, "info");
         } catch (e) {
-            alert("Camera failed: " + e.message);
+            console.error("Camera error:", e);
+            alert("Camera failed: " + e.message + "\nPlease check permissions and ensure you are using HTTPS.");
             this.resetStartButton();
             return;
         }

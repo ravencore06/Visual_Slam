@@ -20,6 +20,11 @@ async function setupCamera() {
         }
     };
 
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert("Camera API not available. Please ensure you are using HTTPS or localhost.");
+        return;
+    }
+
     try {
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = stream;
@@ -31,7 +36,7 @@ async function setupCamera() {
         });
     } catch (err) {
         console.error('Error accessing camera:', err);
-        alert('Camera access denied or not available.');
+        alert('Camera access denied or not available: ' + err.message);
     }
 }
 

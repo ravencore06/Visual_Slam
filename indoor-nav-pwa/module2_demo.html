@@ -134,12 +134,19 @@
             }
 
             // Camera
+            // Camera
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                alert("Camera API not available. Please ensure you are using HTTPS or localhost.");
+                return;
+            }
+
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
                 video.srcObject = stream;
                 video.play();
             } catch (e) {
                 console.error("Camera failed", e);
+                alert("Camera failed to open: " + e.message + "\nCheck permissions and ensure HTTPS.");
             }
 
             // Init Tracker
